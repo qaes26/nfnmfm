@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إلى رهف - سيمفونية الشروق</title>
+    <!-- استدعاء خطوط فاخرة -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* =========================================
+           المتغيرات السينمائية
+           ========================================= */
+        :root {
+            --bg-rain-top: #05070e;
+            --bg-rain-bottom: #12182b;
+            --bg-sun-top: #ff9a9e;
+            --bg-sun-mid: #fecfef;
+            --bg-sun-bottom: #fdfbfb;
+            
+            --text-sad: #e2e8f0;
+            --text-happy: #4a2115;
+            --gold: #d4af37;
+        }
+
+        /* =========================================
+           الإعدادات الأساسية (معدلة للهواتف)
+           ========================================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            /* تعديل مهم لمنع التداخل في الهواتف */
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            font-family: 'Amiri', serif;
+            background: linear-gradient(180deg, var(--bg-rain-top), var(--bg-rain-bottom));
+            color: var(--text-sad);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background 3s ease-in-out, color 3s ease;
+            position: relative;
+        }
+
+        body.sunrise {
+            background: linear-gradient(180deg, var(--bg-sun-top) 0%, var(--bg-sun-mid) 50%, var(--bg-sun-bottom) 100%);
+            color: var(--text-happy);
+        }
+
+        /* =========================================
+           الكانفاس (المطر واليراعات المضيئة)
+           ========================================= */
+        #fx-canvas {
+            position: fixed; /* Fixed instead of absolute */
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* =========================================
+           تأثير الشمس
+           ========================================= */
+        .sun-container {
+            position: fixed;
+            bottom: -30vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150vw;
+            height: 150vw;
+            max-width: 600px;
+            max-height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            opacity: 0;
+            transition: all 4s ease-in-out;
+            pointer-events: none;
+        }
+
+        body.sunrise .sun-container {
+            bottom: -15vh;
+            opacity: 1;
+        }
+
+        .sun-core {
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #fff7b0 40%, #ffdf00 80%, transparent 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 60px 30px rgba(255, 223, 0, 0.5), 0 0 100px 50px rgba(255, 154, 158, 0.3);
+            z-index: 3;
+        }
+
+        /* =========================================
+           حاوية الزهور
+           ========================================= */
+        #garden {
+            position: fixed;
+            bottom: -10px;
+            left: 0;
+            width: 100vw;
+            height: 30vh; /* تصغير ارتفاع الحديقة للهاتف */
+            z-index: 3;
+            display: flex;
+            justify-content: space-evenly;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        .flower-wrapper {
+            position: relative;
+            transform-origin: bottom center;
+            transform: scale(0);
+            transition: transform 3s ease-out;
+            opacity: 0;
+            width: 15%; /* لتناسب الشاشات الصغيرة */
+            max-width: 60px;
+        }
+
+        body.sunrise .flower-wrapper {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .flower-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            transition: stroke-dashoffset 3s ease-in-out, fill 1.5s ease-in-out 2s;
+            fill: transparent;
+        }
+
+        body.sunrise .flower-path {
+            stroke-dashoffset: 0;
+            fill: var(--flower-color);
+        }
+
+        /* =========================================
+           واجهة المستخدم (النصوص والأزرار) - محسنة للموبايل
+           ========================================= */
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            width: 92%;
+            max-width: 650px;
+            padding: 2rem 1.5rem; /* تصغير المسافات الداخلية للهاتف */
+            background: rgba(10, 15, 30, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            transition: all 2.5s ease;
+            margin: 20px 0;
+        }
+
+        body.sunrise .ui-layer {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 15px 40px rgba(255, 154, 158, 0.4);
+        }
+
+        /* حجم خط متجاوب (Clamp) يتغير حسب حجم الشاشة */
+        .typewriter {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            line-height: 1.8;
+            white-space: pre-wrap;
+            min-height: 120px; /* ضمان مساحة كافية للنص */
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            transition: opacity 1s ease, color 2s, text-shadow 2s;
+        }
+
+        body.sunrise .typewriter {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+            font-weight: bold;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: currentColor;
+            vertical-align: middle;
+            animation: blink 0.8s infinite;
+            margin-right: 4px;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* الزر السينمائي المتجاوب */
+        .btn-forgive {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            margin-top: 2rem;
+            padding: 10px 35px;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            font-family: 'Aref Ruqaa', serif;
+            color: var(--text-sad);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.5s ease;
+        }
+
+        .btn-forgive.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .btn-forgive:hover, .btn-forgive:active {
+            color: #000;
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+        }
+
+        /* التوقيع */
+        .signature {
+            margin-top: 2.5rem;
+            font-family: 'Aref Ruqaa', serif;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            color: #fff;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 2s ease;
+        }
+
+        body.sunrise .signature {
+            color: var(--text-happy);
+            opacity: 1;
+            transform: translateY(0);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- الكانفاس للمطر والضوء -->
+    <canvas id="fx-canvas"></canvas>
+
+    <!-- الشمس -->
+    <div class="sun-container">
+        <div class="sun-core"></div>
+    </div>
+
+    <!-- الزهور -->
+    <div id="garden"></div>
+
+    <!-- واجهة التفاعل (في المنتصف) -->
+    <div class="ui-layer">
+        <div id="text-container" class="typewriter"></div>
+        <button id="forgive-btn" class="btn-forgive">سامحتك</button>
+        <div id="signature" class="signature">من اعداد قيس جازي</div>
+    </div>
+
+    <script>
+        // =========================================
+        // 1. توليد حديقة الزهور (متناسبة مع الجوال)
+        // =========================================
+        const garden = document.getElementById('garden');
+        const palettes = ['#ff4d6d', '#ff758f', '#ff9f1c', '#f15bb5', '#fee440'];
+        
+        // تقليل عدد الزهور لـ 5 لعدم زحمة الشاشة في الهاتف
+        for (let i = 0; i < 5; i++) {
+            const color = palettes[Math.floor(Math.random() * palettes.length)];
+            const scale = Math.random() * 0.4 + 0.8; 
+            const delay = Math.random() * 1.5; 
+            const tilt = (Math.random() - 0.5) * 30; 
+            
+            const svgFlower = `
+                <div class="flower-wrapper" style="transition-delay: ${delay}s; transform: scale(0) rotate(${tilt}deg);">
+                    <svg viewBox="0 0 100 300" style="--flower-color: ${color}; width: 100%; height: auto; overflow: visible;">
+                        <path class="flower-path" d="M50,300 Q60,200 45,150 T50,50" stroke="#2d6a4f" stroke-width="4" fill="none"/>
+                        <path class="flower-path" d="M47,200 Q80,180 90,150 Q70,160 47,170" stroke="#2d6a4f" stroke-width="3"/>
+                        <path class="flower-path" d="M53,240 Q20,220 10,190 Q30,200 53,210" stroke="#2d6a4f" stroke-width="3"/>
+                        
+                        <g transform="translate(50, 50)">
+                            <path class="flower-path" d="M0,0 C-30,-30 -20,-60 0,-70 C20,-60 30,-30 0,0" stroke="${color}" stroke-width="2"/>
+                            <path class="flower-path" d="M0,0 C-50,-10 -60,20 -40,40 C-20,30 -10,10 0,0" stroke="${color}" stroke-width="2"/>
+                            <path class="flower-path" d="M0,0 C50,-10 60,20 40,40 C20,30 10,10 0,0" stroke="${color}" stroke-width="2"/>
+                            <circle cx="0" cy="0" r="10" fill="#ffdf00" style="opacity: 0; transition: opacity 2s ease 3s;" onload="this.style.opacity=1"/>
+                        </g>
+                    </svg>
+                </div>
+            `;
+            garden.innerHTML += svgFlower;
+        }
+
+        // =========================================
+        // 2. محرك الكانفاس (المطر / السحر)
+        // =========================================
+        const canvas = document.getElementById('fx-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+        let canvasState = 'rain'; 
+        
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.initRain();
+            }
+            initRain() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height - height;
+                this.speedY = Math.random() * 10 + 10; 
+                this.speedX = 1; 
+                this.length = Math.random() * 20 + 10;
+                this.color = `rgba(160, 174, 192, ${Math.random() * 0.4 + 0.1})`;
+            }
+            update() {
+                if (canvasState === 'rain') {
+                    this.y += this.speedY;
+                    this.x += this.speedX;
+                    if (this.y > height) this.initRain();
+                } 
+                else if (canvasState === 'freeze') {
+                    this.speedY *= 0.90;
+                    this.speedX *= 0.90;
+                    this.y += this.speedY;
+                    this.x += this.speedX;
+                }
+                else if (canvasState === 'magic') {
+                    this.speedY -= 0.1; 
+                    if (this.speedY < -2) this.speedY = -2 - Math.random() * 2;
+                    
+                    this.x += Math.sin(this.y * 0.02) * 1; 
+                    this.y += this.speedY;
+                    
+                    if (!this.isMagic) {
+                        this.isMagic = true;
+                        const magicColors = ['255, 255, 255', '255, 223, 0'];
+                        this.magicColor = magicColors[Math.floor(Math.random() * magicColors.length)];
+                        this.size = Math.random() * 2 + 1;
+                        this.length = 0; // إخفاء الخط
+                    }
+                    this.color = `rgba(${this.magicColor}, ${Math.random() * 0.6 + 0.2})`;
+
+                    if (this.y < -50) {
+                        this.y = height + 50;
+                        this.x = Math.random() * width;
+                    }
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                if (canvasState === 'rain' || canvasState === 'freeze') {
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x + this.speedX, this.y + this.length);
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } else {
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+            }
+        }
+
+        // تقليل عدد الجزيئات لضمان أداء سلس على الهاتف
+        for (let i = 0; i < 100; i++) particles.push(new Particle());
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+
+        // =========================================
+        // 3. الآلة الكاتبة البشرية
+        // =========================================
+        const sadText = "إلى رهف...\nهنا، حيث السماء تبكي بدلاً مني...\nأعتذر عن كل غيمة حزن ظللت قلبكِ.\nلم أرد يوماً أن أكون شوكة، بل أردت أن أكون أمانكِ.\nهل تمنحينني فرصة ليزهر هذا الخراب؟";
+        const happyText = "وكأن الكون تنفس من جديد...\nشكراً لعفوكِ الذي أعاد لروحي شمسها الدفيئة.\nسأبقى أزرع الفرح في طريقكِ، لتزهري دائماً وأبداً.";
+        
+        const textContainer = document.getElementById('text-container');
+        const btnForgive = document.getElementById('forgive-btn');
+        let isTyping = false;
+
+        async function typeHuman(text) {
+            isTyping = true;
+            textContainer.innerHTML = '<span class="cursor"></span>';
+            
+            for (let i = 0; i < text.length; i++) {
+                let char = text.charAt(i);
+                let current = textContainer.innerHTML.replace('<span class="cursor"></span>', '');
+                
+                if (char === '\n') {
+                    textContainer.innerHTML = current + '<br><span class="cursor"></span>';
+                    await new Promise(r => setTimeout(r, 400));
+                } else {
+                    textContainer.innerHTML = current + char + '<span class="cursor"></span>';
+                    let speed = Math.random() * 40 + 30; 
+                    if (char === '.' || char === '؟' || char === '،') speed += 300; 
+                    await new Promise(r => setTimeout(r, speed));
+                }
+            }
+            isTyping = false;
+        }
+
+        // =========================================
+        // 4. السيمفونية (تسلسل الأحداث)
+        // =========================================
+        setTimeout(async () => {
+            await typeHuman(sadText);
+            setTimeout(() => { btnForgive.classList.add('visible'); }, 800);
+        }, 1000);
+
+        btnForgive.addEventListener('click', async () => {
+            if (isTyping) return;
+
+            // 1. إخفاء الزر والنص القديم بسلاسة
+            btnForgive.style.opacity = '0';
+            btnForgive.style.pointerEvents = 'none';
+            textContainer.style.opacity = '0';
+            
+            // 2. تجميد المطر
+            canvasState = 'freeze';
+            
+            // 3. التحول (الشروق والسحر)
+            setTimeout(() => {
+                document.body.classList.add('sunrise');
+                canvasState = 'magic';
+                
+                // 4. كتابة النص الجديد بعد فترة قصيرة
+                setTimeout(async () => {
+                    textContainer.innerHTML = '';
+                    textContainer.style.opacity = '1';
+                    await typeHuman(happyText);
+                    
+                    // إظهار التوقيع بشكل واضح
+                    document.querySelector('.signature').style.opacity = '1';
+                }, 2000); 
+                
+            }, 800);
+        });
+
+    </script>
+</body>
+</html>
+
